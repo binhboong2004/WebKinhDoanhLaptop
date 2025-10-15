@@ -1,0 +1,31 @@
+.bg-primary-custom{
+    background-color: #EE1926;
+}
+.btn-link-custom{
+    color: #EE1926;
+    text-decoration: underline;
+}
+.btn-link-danger-custom{
+    color: #be0000;
+    text-decoration: underline;
+}
+.btn-logout{
+    padding: 0px;
+    padding-left: 9.5px;
+    font-size: 14px;
+    color: white;
+}
+.btn-logout:hover{
+    color: white !important;
+}
+
+
+.btn-logout-mb{
+    text-align: left;
+    width: 100%;
+    padding: 10px 0px;
+    color: black;
+}
+.btn-logout-mb:hover{
+    color: #EE1926 !important;
+}

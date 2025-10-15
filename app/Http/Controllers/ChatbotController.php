@@ -97,7 +97,7 @@ class ChatbotController extends Controller
         // =========================================================================
         //các từ để tìm kiếm sản phẩm (loại bỏ các từ này->tìm kiếm sản phẩm)
         $stopWords = ['bạn', 'tôi', 'muốn', 'shop', 'bán', 'không', 'giá', 'bao', 'nhiêu', 'cho', 'mình', 'hỏi', 'về', 'sản', 'phẩm', 'loại', 'cái', 'chiếc', 'ạ', 'tư', 'vấn', 'mấy', 'bên', 'cần',
-        'tìm', 'một', 'con', 'em', 'hãy', 'của', 'có', 'còn'];
+        'tìm', 'một', 'con', 'em', 'hãy', 'của', 'có', 'còn', 'cửa hàng', '?', 'anh', 'chị'];
         $cleanedMessage = str_replace($stopWords, '', $lowerMessage);
         $cleanedMessage = trim(preg_replace('/\s+/', ' ', $cleanedMessage));
         $keywords = array_filter(explode(' ', $cleanedMessage));

@@ -108,6 +108,12 @@ Route::middleware('auth')->group(function(){
         ->name('user.checkout');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])
         ->name('user.checkout.process');
+    Route::get('/checkout/bank-transfer', [CheckoutController::class, 'bankTransfer'])
+        ->name('user.checkout.bank-transfer');
+    Route::get('/checkout/zalopay', [CheckoutController::class, 'zaloPay'])
+        ->name('user.checkout.zalopay');
+    Route::get('/checkout/momo', [CheckoutController::class, 'momo'])
+        ->name('user.checkout.momo');
 });
 /* ---------------------------------- USER ---------------------------------- */
 

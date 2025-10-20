@@ -41,9 +41,9 @@
                                             </button>
                                             <div class="dropdown-menu dropdown-menu-right">
                                                 <a class="dropdown-item" href="{{ route('admin.order.update-status', ['id' => $order->id, 'status' => 'processing']) }}"><div class="dot dot-lg bg-warning"></div> Đang xử lý</a>
+                                                <a class="dropdown-item" href="{{ route('admin.order.update-status', ['id' => $order->id, 'status' => 'paid']) }}"><div class="dot dot-lg bg-secondary"></div> Đã thanh toán</a>
                                                 <a class="dropdown-item" href="{{ route('admin.order.update-status', ['id' => $order->id, 'status' => 'delivering']) }}"><div class="dot dot-lg bg-primary"></div> Đang giao hàng</a>
                                                 <a class="dropdown-item" href="{{ route('admin.order.update-status', ['id' => $order->id, 'status' => 'completed']) }}"><div class="dot dot-lg bg-success"></div> Đã giao hàng</a>
-                                                <a class="dropdown-item" href="{{ route('admin.order.update-status', ['id' => $order->id, 'status' => 'paid']) }}"><div class="dot dot-lg bg-secondary"></div> Đã thanh toán</a>
                                             </div>
                                         </div>
                                     </div>

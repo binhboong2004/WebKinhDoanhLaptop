@@ -74,7 +74,10 @@ if(!function_exists('translateClassStatusOrder')){
             return 'primary';
         }elseif($value === 'completed'){
             return 'success';
-        }else{
+        }elseif($value === 'paid'){
+            return 'secondary';
+        }
+        else{
             return "danger";
         }
     }

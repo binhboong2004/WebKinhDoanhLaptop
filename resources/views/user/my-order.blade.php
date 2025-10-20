@@ -51,6 +51,8 @@
                                                     Đã giao hàng
                                                 @elseif ($order->status === 'processing')
                                                     Đang xử lý
+                                                @elseif ($order->status === 'paid')
+                                                    Đã thanh toán
                                                 @else
                                                     {{ ucfirst($order->status) }}
                                                 @endif

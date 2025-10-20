@@ -64,7 +64,7 @@ class ChatbotController extends Controller
                 $orderNumber = strtoupper($matches[1]);
                 $order = DB::table('orders')->where('order_number', $orderNumber)->first();
                 if ($order) {
-                    $statusTranslations = ['pending' => 'đang chờ xử lý', 'completed' => 'đã hoàn thành', 'delivering' => 'đang giao hàng', 'cancelled' => 'đã hủy'];
+                    $statusTranslations = ['pending' => 'đang chờ xử lý', 'completed' => 'đã hoàn thành', 'delivering' => 'đang giao hàng', 'cancelled' => 'đã hủy', 'paid' => 'đã thanh toán'];
                     $status = $statusTranslations[$order->status] ?? $order->status;
                     $answer = "Chào bạn, đơn hàng `{$order->order_number}` của bạn có tổng giá trị là **" . number_format($order->total) . " VNĐ** và hiện đang ở trạng thái **{$status}**.";
                     return response()->json(['answer' => $answer, 'source' => 'database_orders']);

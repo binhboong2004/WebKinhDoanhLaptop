@@ -39,7 +39,7 @@
                             </select>
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label for="">IChi tiết</label>
+                            <label for="">Chi tiết</label>
                             <textarea name="information" id="information" cols="30" rows="10">
                                 {{ $product->information }}
                             </textarea>

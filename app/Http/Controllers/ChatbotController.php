@@ -97,7 +97,7 @@ class ChatbotController extends Controller
         // =========================================================================
         //các từ để tìm kiếm sản phẩm (loại bỏ các từ này->tìm kiếm sản phẩm)
         $stopWords = ['bạn', 'tôi', 'muốn', 'shop', 'bán', 'không', 'giá', 'bao', 'nhiêu', 'cho', 'mình', 'hỏi', 'về', 'sản', 'phẩm', 'loại', 'cái', 'chiếc', 'ạ', 'tư', 'vấn', 'mấy', 'bên', 'cần',
-        'tìm', 'một', 'con', 'em', 'hãy', 'của', 'có', 'còn', 'cửa hàng', '?', 'anh', 'chị'];
+        'tìm', 'một', 'con', 'em', 'hãy', 'của', 'có', 'còn', 'cửa hàng', '?', 'anh', 'chị', 'hãng'];
         $cleanedMessage = str_replace($stopWords, '', $lowerMessage);
         $cleanedMessage = trim(preg_replace('/\s+/', ' ', $cleanedMessage));
         $keywords = array_filter(explode(' ', $cleanedMessage));
@@ -114,7 +114,8 @@ class ChatbotController extends Controller
 
             if ($result->count() > 0) {
                 $formattedResult = $result->map(function($item) {
-                    return "- " . $item->product_name . " (Giá: " . number_format($item->price) . " VNĐ)";
+                    return "- " . $item->product_name . " (Giá: " . number_format($item->price) . " VNĐ. " . 
+                    "Số lượng còn: " . $item->quantity. " chiếc)";
                 })->implode("\n");
                 $answer = "Mình tìm thấy các sản phẩm sau khớp với yêu cầu của bạn:\n" . $formattedResult;
                 return response()->json(['answer' => $answer, 'source' => 'database_products_summary']);

@@ -29,7 +29,7 @@
                 @endforeach
             @else
             <div class="text-center" style="text-align: center !important">
-                <span class="text-danger font-weight-bold">No products.</span>
+                <span class="text-danger font-weight-bold">Không có sản phẩm.</span>
             </div>
             @endif
         </div>

@@ -761,6 +761,8 @@ ol {
 .categories__item {
 	height: 270px;
 	position: relative;
+	border-radius: 50%;
+	background-color: #f2f3f7;
 }
 
 .categories__item h5 {
@@ -782,6 +784,7 @@ ol {
 	background: #ffffff;
 	display: block;
 }
+
 
 .categories__slider .col-lg-3 {
 	max-width: 100%;

@@ -92,8 +92,8 @@
                             <a href="#"><i class="fa fa-pinterest-p"></i></a>
                         </div>
                         <div class="header__top__right__language">
-                            <img src="{{ asset('user/img/language.png') }}" alt="">
-                            <div>English</div>
+                            <img src="{{ asset('user/img/language_vn.png') }}" alt="">
+                            <div>VietNamese</div>
                             <span class="arrow_carrot-down"></span>
                             <ul>
                                 <li><a href="#">VietNamese</a></li>

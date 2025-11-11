@@ -4,11 +4,17 @@ const sendMessageButton = document.querySelector("#send-message");
 const chatbotToggler = document.querySelector("#chatbot-toggler");
 const closeChatbot = document.querySelector("#close-chatbot");
 
-const initialInputHeight = messageInput.scrollHeight;
+// Lấy các nút điều khiển mới
+const fileInput = document.querySelector("#file-input");
+const fileUploadWrapper = document.querySelector(".file-upload-wrapper");
+const fileCancelButton = document.querySelector("#file-cancel");
+const fileUploadButton = document.querySelector("#file-upload");
+const emojiPickerButton = document.querySelector("#emoji-picker");
 
-// =================================================================
-// ===== KHÔNG GỌI TRỰC TIẾP GEMINI NỮA =====
-// =================================================================
+// Biến để lưu trữ file ảnh đã chọn (dưới dạng Base64)
+let currentFile = null; 
+
+const initialInputHeight = messageInput.scrollHeight;
 
 const createMessageElement = (content, ...classes) => {
     const div = document.createElement("div");
@@ -17,25 +23,23 @@ const createMessageElement = (content, ...classes) => {
     return div;
 };
 
-// Hàm mới để gửi tin nhắn đến server Laravel của bạn
-const generateBotResponse = async (userMessage, incomingMessageDiv) => {
+// Hàm gửi tin nhắn (ĐÃ SỬA ĐỔI để gửi cả file)
+const generateBotResponse = async (userMessage, incomingMessageDiv, fileData) => {
     const messageElement = incomingMessageDiv.querySelector(".message-text");
-    
-    // URL này trỏ đến server Laravel của bạn, được định nghĩa trong web.php
-    const LARAVEL_API_URL = '/chatbot';
+    const LARAVEL_API_URL = '/chatbot'; // URL server Laravel của bạn
+
+    // Tạo payload mới, chứa cả tin nhắn và file (nếu có)
+    let payload = {
+        message: userMessage,
+        file: fileData // fileData là object { data: "base64string...", mime_type: "image/png" }
+    };
 
     try {
-        // Sử dụng axios đã được cấu hình trong bootstrap.js
-        // Nó sẽ tự động gửi CSRF token
-        const response = await window.axios.post(LARAVEL_API_URL, {
-            message: userMessage
-        });
+        // Gửi payload mới lên server
+        const response = await window.axios.post(LARAVEL_API_URL, payload);
 
-        // Lấy câu trả lời từ server Laravel
         const botAnswer = response.data.answer;
         
-        // Hiển thị câu trả lời
-        // Chúng ta sẽ dùng thư viện Showdown để render Markdown cho đẹp
         const converter = new showdown.Converter();
         messageElement.innerHTML = converter.makeHtml(botAnswer);
 
@@ -44,25 +48,35 @@ const generateBotResponse = async (userMessage, incomingMessageDiv) => {
         messageElement.innerText = "Xin lỗi, đã có lỗi kết nối đến máy chủ. Vui lòng thử lại sau.";
         messageElement.style.color = "#FF0000";
     } finally {
-        // Xóa trạng thái "thinking" sau khi có kết quả
         incomingMessageDiv.classList.remove("thinking");
         chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
     }
 };
 
-
+// Hàm xử lý gửi tin (ĐÃ SỬA ĐỔI để xử lý cả file)
 const handleOutgoingMessage = (e) => {
     e.preventDefault();
     const userMessage = messageInput.value.trim();
-    if (!userMessage) return;
+    
+    // Chỉ gửi khi có tin nhắn text hoặc file ảnh
+    if (!userMessage && !currentFile) return;
 
     messageInput.value = "";
     messageInput.dispatchEvent(new Event("input"));
+    
+    // Hiển thị tin nhắn người dùng (kèm ảnh nếu có)
+    const messageContent = 
+        `<div class="message-text">${userMessage}</div>` + 
+        (currentFile ? `<img src="data:${currentFile.mime_type};base64,${currentFile.data}" class="attachment" />` : "");
 
-    // Hiển thị tin nhắn của người dùng
-    const outgoingMessageDiv = createMessageElement(`<div class="message-text">${userMessage}</div>`, "user-message");
+    const outgoingMessageDiv = createMessageElement(messageContent, "user-message");
     chatBody.appendChild(outgoingMessageDiv);
     chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
+
+    // Đặt lại UI file
+    fileUploadWrapper.classList.remove("file-uploaded");
+    const fileToSend = currentFile; // Giữ file lại để gửi đi
+    currentFile = null; // Xóa file khỏi biến global
 
     // Hiển thị trạng thái "thinking" của bot
     setTimeout(() => {
@@ -83,8 +97,8 @@ const handleOutgoingMessage = (e) => {
         chatBody.appendChild(incomingMessageDiv);
         chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
         
-        // Gọi hàm để lấy câu trả lời từ server Laravel
-        generateBotResponse(userMessage, incomingMessageDiv);
+        // Gửi tin nhắn và file (nếu có) cho bot
+        generateBotResponse(userMessage, incomingMessageDiv, fileToSend);
     }, 600);
 };
 
@@ -106,6 +120,63 @@ sendMessageButton.addEventListener("click", (e) => handleOutgoingMessage(e));
 chatbotToggler.addEventListener("click", () => document.body.classList.toggle("show-chatbot"));
 closeChatbot.addEventListener("click", () => document.body.classList.remove("show-chatbot"));
 
-// Thêm thư viện Showdown để render Markdown
-// Bạn cần thêm dòng này vào file layout chính của bạn (ví dụ: app.blade.php)
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+// ===== LOGIC XỬ LÝ TẢI FILE ẢNH (lấy từ script.js) =====
+fileUploadButton.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        fileUploadWrapper.querySelector("img").src = e.target.result;
+        fileUploadWrapper.classList.add("file-uploaded");
+        const base64String = e.target.result.split(",")[1];
+
+        // Lưu file vào biến global
+        currentFile = {
+            data: base64String,
+            mime_type: file.type
+        };
+
+        fileInput.value = ""; // Xóa input để có thể chọn lại file tương tự
+    }
+
+    reader.readAsDataURL(file);
+});
+
+fileCancelButton.addEventListener("click", () => {
+    currentFile = null; // Xóa file
+    fileUploadWrapper.classList.remove("file-uploaded");
+});
+
+// ===== LOGIC XỬ LÝ EMOJI PICKER (đã sửa lỗi) =====
+// Sử dụng logic 'onClickOutside' từ file script.js gốc của bạn
+
+// 1. Tạo picker
+const picker = new EmojiMart.Picker({
+    theme: "light",
+    skinTonePosition: "none",
+    previewPosition: "none",
+    onEmojiSelect: (emoji) => {
+        const { selectionStart: start, selectionEnd: end } = messageInput;
+        messageInput.setRangeText(emoji.native, start, end, "end");
+        messageInput.focus();
+        document.body.classList.remove("show-emoji-picker"); // Ẩn picker sau khi chọn
+    },
+    // Logic này sẽ xử lý việc BẬT/TẮT picker
+    onClickOutside: (e) => {
+        // e.target chính là thứ bạn vừa nhấn vào
+        if (e.target.id === "emoji-picker") {
+            // Nếu bạn nhấn vào nút mặt cười, nó sẽ Bật/Tắt
+            document.body.classList.toggle("show-emoji-picker");
+        } else if (!picker.contains(e.target) && e.target.id !== "emoji-picker") {
+            // Nếu bạn nhấn vào bất cứ đâu bên ngoài picker (VÀ không phải nút mặt cười)
+            // nó sẽ đóng picker
+            document.body.classList.remove("show-emoji-picker");
+        }
+    }
+});
+
+// 2. Thêm picker vào form
+document.querySelector(".chat-form").appendChild(picker);

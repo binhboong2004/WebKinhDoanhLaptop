@@ -74,7 +74,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
 
-    <script src="script.js"></script>
+    <script src="chatbot.js"></script>
     @vite(['resources/js/app.js'])
 </body>
 

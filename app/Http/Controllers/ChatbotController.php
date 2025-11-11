@@ -18,19 +18,15 @@ class ChatbotController extends Controller
         $identifiedProductName = null; // <-- THÊM MỚI: Biến lưu tên SP từ ảnh
 
         // --- BƯỚC XỬ LÝ ẢNH MỚI ---
+        // --- BƯỚC XỬ LÝ ẢNH MỚI (ĐÃ SỬA THEO YÊU CẦU) ---
         if ($imageFile) {
-            // Bạn có thể thêm validation nghiêm ngặt hơn
-            $request->validate([
-                'image' => 'image|mimes:jpeg,png,jpg,webp|max:5120', // Giới hạn 5MB
+            // Ngay khi phát hiện có ảnh, trả về thông báo và dừng lại.
+            return response()->json([
+                'answer' => 'Tôi là Chatbot AI không hỗ trợ được yêu cầu này của khách hàng.😛
+                Vui lòng liên hệ trực tiếp với Admin qua SĐT Zalo: 0889639655 👉👈'
             ]);
             
-            // Gọi hàm AI để nhận diện sản phẩm từ ảnh
-            $identifiedProductName = $this->_getProductNameFromImage($imageFile);
-            
-            // Nếu AI không nhận diện được, coi như không có tên
-            if ($identifiedProductName === 'UNKNOWN') {
-                $identifiedProductName = null;
-            }
+            // Toàn bộ logic xử lý ảnh bên dưới sẽ không bao giờ được chạy
         }
 
         // Nếu không có tin nhắn VÀ không có ảnh (hoặc nhận diện thất bại)

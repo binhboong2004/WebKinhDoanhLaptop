@@ -11,7 +11,7 @@ const fileCancelButton = document.querySelector("#file-cancel");
 const fileUploadButton = document.querySelector("#file-upload");
 const emojiPickerButton = document.querySelector("#emoji-picker");
 
-// Biến để lưu trữ file ảnh đã chọn (dưới dạng Base64)
+// Biến để lưu trữ file (cả File object để gửi và DataURL để preview)
 let currentFile = null; 
 
 const initialInputHeight = messageInput.scrollHeight;
@@ -23,20 +23,33 @@ const createMessageElement = (content, ...classes) => {
     return div;
 };
 
-// Hàm gửi tin nhắn (ĐÃ SỬA ĐỔI để gửi cả file)
-const generateBotResponse = async (userMessage, incomingMessageDiv, fileData) => {
+// =========================================================================
+// HÀM 1: ĐÃ SỬA - Gửi tin nhắn bằng FormData
+// =========================================================================
+const generateBotResponse = async (userMessage, incomingMessageDiv, fileObject) => {
     const messageElement = incomingMessageDiv.querySelector(".message-text");
     const LARAVEL_API_URL = '/chatbot'; // URL server Laravel của bạn
 
-    // Tạo payload mới, chứa cả tin nhắn và file (nếu có)
-    let payload = {
-        message: userMessage,
-        file: fileData // fileData là object { data: "base64string...", mime_type: "image/png" }
-    };
+    // --- SỬA ĐỔI QUAN TRỌNG ---
+    // Tạo payload bằng FormData để gửi file đúng chuẩn
+    const formData = new FormData();
+    formData.append('message', userMessage);
+
+    if (fileObject) {
+        // Key 'image' phải khớp với $request->file('image') trong Laravel
+        formData.append('image', fileObject);
+    }
+    // --- KẾT THÚC SỬA ĐỔI ---
 
     try {
-        // Gửi payload mới lên server
-        const response = await window.axios.post(LARAVEL_API_URL, payload);
+        // Gửi formData lên server. 
+        // Axios sẽ tự động đặt Content-Type là 'multipart/form-data'
+        const response = await window.axios.post(LARAVEL_API_URL, formData, {
+             headers: {
+                // Đảm bảo axios gửi đúng định dạng
+                'Content-Type': 'multipart/form-data'
+            }
+        });
 
         const botAnswer = response.data.answer;
         
@@ -45,7 +58,12 @@ const generateBotResponse = async (userMessage, incomingMessageDiv, fileData) =>
 
     } catch (error) {
         console.error("Lỗi khi gọi đến server Laravel:", error);
-        messageElement.innerText = "Xin lỗi, đã có lỗi kết nối đến máy chủ. Vui lòng thử lại sau.";
+        if (error.response && error.response.status === 422) {
+             // Lỗi validation (ví dụ: file quá lớn)
+             messageElement.innerText = "Lỗi: File ảnh không hợp lệ hoặc quá lớn (tối đa 5MB).";
+        } else {
+             messageElement.innerText = "Xin lỗi, đã có lỗi kết nối đến máy chủ. Vui lòng thử lại sau.";
+        }
         messageElement.style.color = "#FF0000";
     } finally {
         incomingMessageDiv.classList.remove("thinking");
@@ -53,7 +71,9 @@ const generateBotResponse = async (userMessage, incomingMessageDiv, fileData) =>
     }
 };
 
-// Hàm xử lý gửi tin (ĐÃ SỬA ĐỔI để xử lý cả file)
+// =========================================================================
+// HÀM 2: ĐÃ SỬA - Xử lý gửi tin (tách File object và DataURL)
+// =========================================================================
 const handleOutgoingMessage = (e) => {
     e.preventDefault();
     const userMessage = messageInput.value.trim();
@@ -67,7 +87,8 @@ const handleOutgoingMessage = (e) => {
     // Hiển thị tin nhắn người dùng (kèm ảnh nếu có)
     const messageContent = 
         `<div class="message-text">${userMessage}</div>` + 
-        (currentFile ? `<img src="data:${currentFile.mime_type};base64,${currentFile.data}" class="attachment" />` : "");
+        // Lấy dataUrl từ object currentFile để preview
+        (currentFile ? `<img src="${currentFile.dataUrl}" class="attachment" />` : "");
 
     const outgoingMessageDiv = createMessageElement(messageContent, "user-message");
     chatBody.appendChild(outgoingMessageDiv);
@@ -75,7 +96,9 @@ const handleOutgoingMessage = (e) => {
 
     // Đặt lại UI file
     fileUploadWrapper.classList.remove("file-uploaded");
-    const fileToSend = currentFile; // Giữ file lại để gửi đi
+    
+    // Chỉ lấy File object để gửi đi
+    const fileToSend = currentFile ? currentFile.file : null; 
     currentFile = null; // Xóa file khỏi biến global
 
     // Hiển thị trạng thái "thinking" của bot
@@ -97,7 +120,7 @@ const handleOutgoingMessage = (e) => {
         chatBody.appendChild(incomingMessageDiv);
         chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
         
-        // Gửi tin nhắn và file (nếu có) cho bot
+        // Gửi tin nhắn và File object (nếu có) cho bot
         generateBotResponse(userMessage, incomingMessageDiv, fileToSend);
     }, 600);
 };
@@ -120,23 +143,32 @@ sendMessageButton.addEventListener("click", (e) => handleOutgoingMessage(e));
 chatbotToggler.addEventListener("click", () => document.body.classList.toggle("show-chatbot"));
 closeChatbot.addEventListener("click", () => document.body.classList.remove("show-chatbot"));
 
-// ===== LOGIC XỬ LÝ TẢI FILE ẢNH (lấy từ script.js) =====
+// =========================================================================
+// HÀM 3: ĐÃ SỬA - Logic tải file (Lưu cả File object và DataURL)
+// =========================================================================
 fileUploadButton.addEventListener("click", () => fileInput.click());
 
 fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
+    const file = fileInput.files[0]; // Lấy File object
     if (!file) return;
+
+    // Kiểm tra định dạng file (chỉ cho phép ảnh)
+    if (!file.type.startsWith('image/')) {
+        alert('Chỉ hỗ trợ tải lên file ảnh (jpeg, png, jpg, webp).');
+        fileInput.value = ""; // Xóa input
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
-        fileUploadWrapper.querySelector("img").src = e.target.result;
+        const dataUrl = e.target.result; // Lấy DataURL (base64)
+        fileUploadWrapper.querySelector("img").src = dataUrl;
         fileUploadWrapper.classList.add("file-uploaded");
-        const base64String = e.target.result.split(",")[1];
 
-        // Lưu file vào biến global
+        // Lưu cả File object (để gửi) và DataURL (để preview)
         currentFile = {
-            data: base64String,
-            mime_type: file.type
+            file: file,
+            dataUrl: dataUrl 
         };
 
         fileInput.value = ""; // Xóa input để có thể chọn lại file tương tự
@@ -150,10 +182,7 @@ fileCancelButton.addEventListener("click", () => {
     fileUploadWrapper.classList.remove("file-uploaded");
 });
 
-// ===== LOGIC XỬ LÝ EMOJI PICKER (đã sửa lỗi) =====
-// Sử dụng logic 'onClickOutside' từ file script.js gốc của bạn
-
-// 1. Tạo picker
+// ===== LOGIC XỬ LÝ EMOJI PICKER (giữ nguyên) =====
 const picker = new EmojiMart.Picker({
     theme: "light",
     skinTonePosition: "none",
@@ -162,21 +191,14 @@ const picker = new EmojiMart.Picker({
         const { selectionStart: start, selectionEnd: end } = messageInput;
         messageInput.setRangeText(emoji.native, start, end, "end");
         messageInput.focus();
-        document.body.classList.remove("show-emoji-picker"); // Ẩn picker sau khi chọn
+        document.body.classList.remove("show-emoji-picker");
     },
-    // Logic này sẽ xử lý việc BẬT/TẮT picker
     onClickOutside: (e) => {
-        // e.target chính là thứ bạn vừa nhấn vào
         if (e.target.id === "emoji-picker") {
-            // Nếu bạn nhấn vào nút mặt cười, nó sẽ Bật/Tắt
             document.body.classList.toggle("show-emoji-picker");
         } else if (!picker.contains(e.target) && e.target.id !== "emoji-picker") {
-            // Nếu bạn nhấn vào bất cứ đâu bên ngoài picker (VÀ không phải nút mặt cười)
-            // nó sẽ đóng picker
             document.body.classList.remove("show-emoji-picker");
         }
     }
 });
-
-// 2. Thêm picker vào form
 document.querySelector(".chat-form").appendChild(picker);
